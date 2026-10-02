@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>신나는 두더지 잡기! Whack-a-Mole</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================
+       1. VARIABLES & RESET
+       ========================================== */
+    :root {
+      --bg-gradient: linear-gradient(135deg, #a8e6cf 0%, #dbede3 50%, #ffd3b6 100%);
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --primary-green: #4caf50;
+      --accent-orange: #ff6b6b;
+      --accent-yellow: #ffb703;
+      --dirt-brown: #8d5b4c;
+      --dirt-dark: #5c3a2e;
+      --mole-brown: #8b5a2b;
+      --text-color: #2b2d42;
+      --shadow-color: rgba(0, 0, 0, 0.15);
+      --font-family: 'Jua', 'Outfit', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+      color: var(--text-color);
+      overflow-x: hidden;
+    }
+
+    /* Custom Hammer Cursor on PC */
+    @media (pointer: fine) {
+      body {
+        cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="%23ff6b6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5 4 4"/><path d="M13 7 7 13"/><path d="m3 21 6-6"/><path d="m11 11-1.5-1.5"/><path d="M17 3 21 7l-5.5 5.5L11.5 8.5z"/></svg>') 4 28, auto;
+      }
+      body:active {
+        cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="%23e63946" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-30 12 12)"><path d="m15 5 4 4"/><path d="M13 7 7 13"/><path d="m3 21 6-6"/><path d="m11 11-1.5-1.5"/><path d="M17 3 21 7l-5.5 5.5L11.5 8.5z"/></svg>') 4 28, auto;
+      }
+    }
+
+    /* ==========================================
+       2. CONTAINER & HEADER
+       ========================================== */
+    .game-container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 28px;
+      box-shadow: 0 20px 40px var(--shadow-color), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+      border: 4px solid #ffffff;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: relative;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-group h1 {
+      font-size: 1.8rem;
+      background: linear-gradient(45deg, #e63946, #ffb703);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      letter-spacing: 0.5px;
+    }
+
+    .sound-btn {
+      background: #ffffff;
+      border: 2px solid #e0e0e0;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+      transition: transform 0.15s ease, background-color 0.2s;
+    }
+
+    .sound-btn:active {
+      transform: scale(0.9);
+    }
+
+    /* ==========================================
+       3. SCORE & TIMER DASHBOARD
+       ========================================== */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 18px;
+      padding: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+    }
+
+    .stat-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 8px 4px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #f0f0f0;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: #718096;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text-color);
+    }
+
+    .stat-value.score { color: #2b6cb0; }
+    .stat-value.time { color: #e53e3e; }
+    .stat-value.highscore { color: #d69e2e; }
+
+    /* Timer Progress Bar */
+    .timer-bar-container {
+      width: 100%;
+      height: 10px;
+      background: #edf2f7;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+
+    .timer-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #48bb78, #38a169);
+      border-radius: 999px;
+      transition: width 0.3s linear, background-color 0.3s ease;
+    }
+
+    .timer-bar-fill.warning {
+      background: linear-gradient(90deg, #ecc94b, #dd6b20);
+    }
+
+    .timer-bar-fill.danger {
+      background: linear-gradient(90deg, #f56565, #e53e3e);
+      animation: pulse-danger 0.5s infinite alternate;
+    }
+
+    @keyframes pulse-danger {
+      0% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+
+    /* Combo Floating Indicator */
+    .combo-banner {
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: #dd6b20;
+      opacity: 0;
+      transform: translateY(5px) scale(0.9);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .combo-banner.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* ==========================================
+       4. GAME ARENA (3x3 GRID & HOLES)
+       ========================================== */
+    .arena {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      background: #73b859;
+      background: linear-gradient(180deg, #7ebd67 0%, #5d9e48 100%);
+      padding: 18px;
+      border-radius: 22px;
+      box-shadow: inset 0 4px 8px rgba(0,0,0,0.2), 0 8px 16px rgba(0,0,0,0.1);
+      border: 4px solid #4a8238;
+      position: relative;
+      touch-action: manipulation;
+    }
+
+    .hole-wrapper {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border-radius: 50% 50% 45% 45%;
+      cursor: pointer;
+    }
+
+    /* Dirt Hole Background */
+    .hole-dirt {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 75%;
+      background: radial-gradient(ellipse at center, #5c3a2e 0%, #3d241c 70%, #291711 100%);
+      border-radius: 50%;
+      box-shadow: inset 0 8px 12px rgba(0,0,0,0.6), 0 4px 6px rgba(0,0,0,0.15);
+      border: 3px solid #734839;
+    }
+
+    /* Grass trim overlay on top of hole front */
+    .grass-front {
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 35%;
+      background-image: radial-gradient(ellipse at top, #7ebd67 0%, #4a8238 80%);
+      border-radius: 50% 50% 0 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .grass-front::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 10%;
+      width: 80%;
+      height: 8px;
+      background: radial-gradient(circle, #8ee075 20%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    /* ==========================================
+       5. MOLE CHARACTER DESIGN
+       ========================================== */
+    .mole {
+      position: absolute;
+      bottom: -100%;
+      left: 12.5%;
+      width: 75%;
+      height: 85%;
+      transition: bottom 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: auto;
+    }
+
+    .hole-wrapper.up .mole {
+      bottom: 12%;
+    }
+
+    /* Mole Body & Face (SVG inside) */
+    .mole-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+      transition: transform 0.15s ease;
+    }
+
+    /* Expression States */
+    .mole .face-normal { display: block; }
+    .mole .face-hit { display: none; }
+
+    .mole.is-hit .face-normal { display: none; }
+    .mole.is-hit .face-hit { display: block; }
+
+    .mole.is-hit .mole-svg {
+      animation: squish 0.25s ease-out forwards;
+    }
+
+    @keyframes squish {
+      0% { transform: scale(1.1, 0.8) translateY(10px); }
+      50% { transform: scale(0.9, 1.1); }
+      100% { transform: scale(1) translateY(20px); opacity: 0.8; }
+    }
+
+    /* Golden Mole Variant */
+    .mole.golden .mole-body-color { fill: #ffb703 !important; }
+    .mole.golden .mole-snout-color { fill: #fff3b0 !important; }
+
+    /* ==========================================
+       6. FLOATING EFFECTS & PARTICLES
+       ========================================== */
+    .hit-effect {
+      position: absolute;
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: #ffb703;
+      text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
+      pointer-events: none;
+      z-index: 10;
+      animation: floatUp 0.7s ease-out forwards;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(0.8); }
+      50% { opacity: 1; transform: translateY(-30px) scale(1.2); }
+      100% { opacity: 0; transform: translateY(-50px) scale(1); }
+    }
+
+    /* Dynamic Hammer Swing Animation on Hit */
+    .hammer-hit-anim {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ff6b6b" stroke="%23ffffff" stroke-width="2"><path d="m15 5 4 4"/><path d="M13 7 7 13"/><path d="m3 21 6-6"/><path d="m11 11-1.5-1.5"/><path d="M17 3 21 7l-5.5 5.5L11.5 8.5z"/></svg>') no-repeat center/contain;
+      pointer-events: none;
+      z-index: 9;
+      transform-origin: bottom right;
+      animation: hammerSwing 0.2s ease-out forwards;
+    }
+
+    @keyframes hammerSwing {
+      0% { transform: rotate(45deg) scale(1.3); }
+      50% { transform: rotate(-20deg) scale(1.1); }
+      100% { transform: rotate(0deg) scale(0.8); opacity: 0; }
+    }
+
+    /* ==========================================
+       7. BUTTONS & CONTROLS
+       ========================================== */
+    .controls {
+      display: flex;
+      justify-content: center;
+      margin-top: 4px;
+    }
+
+    .btn-start {
+      width: 100%;
+      padding: 16px;
+      font-family: var(--font-family);
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #ffffff;
+      background: linear-gradient(180deg, #ff8e53 0%, #ff6b6b 100%);
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 8px 16px rgba(255, 107, 107, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(255, 107, 107, 0.5);
+    }
+
+    .btn-start:active {
+      transform: translateY(2px);
+      box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+    }
+
+    .btn-start:disabled {
+      background: #cbd5e0;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ==========================================
+       8. GAME OVER MODAL OVERLAY
+       ========================================== */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 100;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 85%;
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 26px 20px;
+      text-align: center;
+      box-shadow: 0 20px 30px rgba(0,0,0,0.3);
+      transform: scale(0.8);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border: 3px solid #ffb703;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-size: 2rem;
+      color: #e63946;
+    }
+
+    .new-record-badge {
+      display: inline-block;
+      background: linear-gradient(45deg, #ffb703, #fb8500);
+      color: #ffffff;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      animation: pulse-badge 0.8s infinite alternate;
+    }
+
+    @keyframes pulse-badge {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.08); }
+    }
+
+    .modal-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #f7fafc;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px dashed #e2e8f0;
+    }
+
+    .modal-stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.1rem;
+    }
+
+    .modal-stat-row strong {
+      color: #2b6cb0;
+    }
+
+    .btn-restart {
+      padding: 14px;
+      font-family: var(--font-family);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      background: linear-gradient(180deg, #48bb78 0%, #38a169 100%);
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 6px 12px rgba(56, 161, 105, 0.3);
+      transition: all 0.15s ease;
+    }
+
+    .btn-restart:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-restart:active {
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <!-- Header Bar -->
+    <div class="header-bar">
+      <div class="title-group">
+        <span style="font-size: 1.8rem;">🔨</span>
+        <h1>두더지 잡기!</h1>
+      </div>
+      <button class="sound-btn" id="soundToggleBtn" aria-label="음향 설정">🔊</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard">
+      <div class="stat-box">
+        <span class="stat-label">현재 점수</span>
+        <span class="stat-value score" id="scoreDisplay">0</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">남은 시간</span>
+        <span class="stat-value time" id="timeDisplay">30s</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">최고 기록</span>
+        <span class="stat-value highscore" id="highScoreDisplay">0</span>
+      </div>
+    </div>
+
+    <!-- Timer Bar & Combo Notification -->
+    <div class="timer-bar-container">
+      <div class="timer-bar-fill" id="timerBar"></div>
+    </div>
+    
+    <div class="combo-banner" id="comboBanner">🔥 3 COMBO! (+2점)</div>
+
+    <!-- 3x3 Grid Arena -->
+    <div class="arena" id="arena">
+      <!-- 9 Holes generated by JS -->
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="controls">
+      <button class="btn-start" id="startBtn">게임 시작! 🚀</button>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="gameOverModal">
+      <div class="modal-card">
+        <div class="modal-title">🎉 게임 종료!</div>
+        <div id="newRecordContainer" style="display: none;">
+          <span class="new-record-badge">👑 최고 기록 경신!</span>
+        </div>
+        
+        <div class="modal-stats">
+          <div class="modal-stat-row">
+            <span>최종 점수:</span>
+            <strong id="finalScoreText">0점</strong>
+          </div>
+          <div class="modal-stat-row">
+            <span>최대 콤보:</span>
+            <strong id="maxComboText" style="color: #dd6b20;">0 COMBO</strong>
+          </div>
+          <div class="modal-stat-row">
+            <span>최고 기록:</span>
+            <strong id="modalHighScoreText">0점</strong>
+          </div>
+        </div>
+
+        <button class="btn-restart" id="restartBtn">다시 도전하기 🔄</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================
+       WEB AUDIO SYNTHESIZER (No external audio files)
+       ========================================== */
+    class SoundManager {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playPop() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(500, this.ctx.currentTime + 0.08);
+
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch(e){}
+      }
+
+      playHit() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          // Punchy thud
+          const osc1 = this.ctx.createOscillator();
+          const gain1 = this.ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(300, this.ctx.currentTime);
+          osc1.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.12);
+
+          gain1.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain1.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+          osc1.connect(gain1);
+          gain1.connect(this.ctx.destination);
+          osc1.start();
+          osc1.stop(this.ctx.currentTime + 0.12);
+
+          // Sparkle pop tone
+          const osc2 = this.ctx.createOscillator();
+          const gain2 = this.ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(800, this.ctx.currentTime);
+          osc2.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.08);
+
+          gain2.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+          osc2.connect(gain2);
+          gain2.connect(this.ctx.destination);
+          osc2.start();
+          osc2.stop(this.ctx.currentTime + 0.08);
+        } catch(e){}
+      }
+
+      playCombo(comboCount) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+          const freq = notes[Math.min(comboCount - 2, notes.length - 1)] || 880;
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.2);
+        } catch(e){}
+      }
+
+      playGameOver() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const notes = [400, 350, 300, 250];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+            gain.gain.setValueAtTime(0.25, now + idx * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.15);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.12);
+            osc.stop(now + idx * 0.12 + 0.15);
+          });
+        } catch(e){}
+      }
+    }
+
+    const soundManager = new SoundManager();
+
+    /* ==========================================
+       SVG MOLE MARKUP GENERATOR
+       ========================================== */
+    function createMoleSVG() {
+      return `
+        <svg class="mole-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- Ears -->
+          <circle cx="28" cy="28" r="10" class="mole-body-color" fill="#8b5a2b"/>
+          <circle cx="28" cy="28" r="6" fill="#fca5a5"/>
+          <circle cx="72" cy="28" r="10" class="mole-body-color" fill="#8b5a2b"/>
+          <circle cx="72" cy="28" r="6" fill="#fca5a5"/>
+
+          <!-- Body / Head -->
+          <ellipse cx="50" cy="58" rx="36" ry="38" class="mole-body-color" fill="#8b5a2b"/>
+
+          <!-- Snout Base -->
+          <ellipse cx="50" cy="64" rx="22" ry="17" class="mole-snout-color" fill="#fde047"/>
+
+          <!-- Pink Nose -->
+          <ellipse cx="50" cy="56" rx="8" ry="6" fill="#f43f5e"/>
+
+          <!-- Expression: Normal Face -->
+          <g class="face-normal">
+            <!-- Eyes -->
+            <circle cx="36" cy="45" r="4.5" fill="#1e293b"/>
+            <circle cx="38" cy="43" r="1.5" fill="#ffffff"/>
+            <circle cx="64" cy="45" r="4.5" fill="#1e293b"/>
+            <circle cx="66" cy="43" r="1.5" fill="#ffffff"/>
+            <!-- Whiskers -->
+            <line x1="22" y1="62" x2="10" y2="60" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+            <line x1="22" y1="66" x2="12" y2="68" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+            <line x1="78" y1="62" x2="90" y2="60" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+            <line x1="78" y1="66" x2="88" y2="68" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+            <!-- Cute Mouth -->
+            <path d="M 45 68 Q 50 72 55 68" stroke="#1e293b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </g>
+
+          <!-- Expression: Hit/Surprised Face -->
+          <g class="face-hit">
+            <!-- Dazed Spiral Eyes (X_X) -->
+            <line x1="31" y1="40" x2="41" y2="50" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+            <line x1="41" y1="40" x2="31" y2="50" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+            <line x1="59" y1="40" x2="69" y2="50" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+            <line x1="69" y1="40" x2="59" y2="50" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+            <!-- O-shaped Shocked Mouth -->
+            <circle cx="50" cy="71" r="5" fill="#1e293b"/>
+            <!-- Sweat Drop -->
+            <path d="M 74 38 Q 78 44 74 48 Q 70 44 74 38 Z" fill="#38bdf8"/>
+          </g>
+        </svg>
+      `;
+    }
+
+    /* ==========================================
+       GAME STATE VARIABLES & CONSTANTS
+       ========================================== */
+    const TOTAL_TIME = 30; // 30 seconds
+    const TOTAL_HOLES = 9;
+
+    let score = 0;
+    let timeRemaining = TOTAL_TIME;
+    let highScore = parseInt(localStorage.getItem('whack_mole_highscore')) || 0;
+    let combo = 0;
+    let maxCombo = 0;
+
+    let isPlaying = false;
+    let timerInterval = null;
+    let moleTimeout = null;
+    let lastHoleIndex = -1;
+
+    // DOM Elements
+    const arenaEl = document.getElementById('arena');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const highScoreDisplay = document.getElementById('highScoreDisplay');
+    const timerBar = document.getElementById('timerBar');
+    const comboBanner = document.getElementById('comboBanner');
+    const startBtn = document.getElementById('startBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+
+    // Modal DOM Elements
+    const gameOverModal = document.getElementById('gameOverModal');
+    const finalScoreText = document.getElementById('finalScoreText');
+    const maxComboText = document.getElementById('maxComboText');
+    const modalHighScoreText = document.getElementById('modalHighScoreText');
+    const newRecordContainer = document.getElementById('newRecordContainer');
+    const restartBtn = document.getElementById('restartBtn');
+
+    /* ==========================================
+       INITIALIZATION & ARENA GENERATION
+       ========================================== */
+    function initArena() {
+      arenaEl.innerHTML = '';
+      highScoreDisplay.textContent = highScore;
+
+      for (let i = 0; i < TOTAL_HOLES; i++) {
+        const holeWrapper = document.createElement('div');
+        holeWrapper.className = 'hole-wrapper';
+        holeWrapper.dataset.index = i;
+
+        const dirt = document.createElement('div');
+        dirt.className = 'hole-dirt';
+
+        const mole = document.createElement('div');
+        mole.className = 'mole';
+        mole.innerHTML = createMoleSVG();
+
+        const grass = document.createElement('div');
+        grass.className = 'grass-front';
+
+        holeWrapper.appendChild(dirt);
+        holeWrapper.appendChild(mole);
+        holeWrapper.appendChild(grass);
+
+        // Fast Pointer / Touch event listener for instantaneous responsiveness
+        const handleWhack = (e) => {
+          e.preventDefault();
+          whackMole(holeWrapper);
+        };
+
+        holeWrapper.addEventListener('pointerdown', handleWhack);
+
+        arenaEl.appendChild(holeWrapper);
+      }
+    }
+
+    /* ==========================================
+       GAME LOGIC & MOLE SPAWNING
+       ========================================== */
+    function getRandomHole() {
+      const holeNodes = document.querySelectorAll('.hole-wrapper');
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * holeNodes.length);
+      } while (randomIndex === lastHoleIndex);
+      lastHoleIndex = randomIndex;
+      return holeNodes[randomIndex];
+    }
+
+    function popUpMole() {
+      if (!isPlaying) return;
+
+      const hole = getRandomHole();
+      const mole = hole.querySelector('.mole');
+
+      // Reset hit & golden states
+      mole.classList.remove('is-hit', 'golden');
+      
+      // 15% chance for Golden Mole (+3 points!)
+      const isGolden = Math.random() < 0.15;
+      if (isGolden) {
+        mole.classList.add('golden');
+      }
+
+      hole.classList.add('up');
+      soundManager.playPop();
+
+      // Dynamic duration: stays up ~0.8s to 1.2s, getting slightly faster as time decreases
+      const speedFactor = Math.max(0.65, timeRemaining / TOTAL_TIME);
+      const stayDuration = (Math.random() * 400 + 700) * speedFactor;
+
+      let hasBeenHit = false;
+      hole.dataset.hit = "false";
+
+      const popDownTimeout = setTimeout(() => {
+        if (hole.classList.contains('up')) {
+          hole.classList.remove('up');
+
+          // If missed without hitting, reset combo!
+          if (hole.dataset.hit !== "true" && isPlaying) {
+            resetCombo();
+          }
+        }
+
+        // Schedule next mole spawn (interval between 0.6s ~ 1.3s)
+        if (isPlaying) {
+          const nextDelay = (Math.random() * 600 + 600) * speedFactor;
+          moleTimeout = setTimeout(popUpMole, nextDelay);
+        }
+      }, stayDuration);
+
+      hole.dataset.popTimeout = popDownTimeout;
+    }
+
+    function whackMole(hole) {
+      if (!isPlaying) return;
+
+      // Must be up and not already whacked
+      if (!hole.classList.contains('up') || hole.dataset.hit === "true") return;
+
+      hole.dataset.hit = "true";
+      const mole = hole.querySelector('.mole');
+      const isGolden = mole.classList.contains('golden');
+
+      mole.classList.add('is-hit');
+      soundManager.playHit();
+
+      // Calculate score & combo
+      combo++;
+      if (combo > maxCombo) maxCombo = combo;
+
+      let pointsEarned = isGolden ? 3 : 1;
+      let comboBonus = 0;
+
+      if (combo >= 3) {
+        comboBonus = 2; // Bonus points for 3+ combo
+        soundManager.playCombo(combo);
+      }
+
+      const totalEarned = pointsEarned + comboBonus;
+      score += totalEarned;
+      scoreDisplay.textContent = score;
+
+      // Update Combo UI
+      showComboBanner(combo, comboBonus);
+
+      // Create floating hit text effect (+1, +3, etc.)
+      createFloatingEffect(hole, isGolden ? `+3 🌟` : (comboBonus > 0 ? `+${totalEarned} 🔥` : `+1`));
+
+      // Trigger Hammer swing visual
+      createHammerEffect(hole);
+
+      // Lower mole after short squish delay
+      setTimeout(() => {
+        hole.classList.remove('up');
+      }, 200);
+    }
+
+    function resetCombo() {
+      if (combo > 0) {
+        combo = 0;
+        comboBanner.classList.remove('active');
+      }
+    }
+
+    function showComboBanner(currentCombo, bonus) {
+      if (currentCombo >= 3) {
+        comboBanner.textContent = `🔥 ${currentCombo} COMBO! (+${bonus}점 보너스)`;
+        comboBanner.classList.add('active');
+      } else {
+        comboBanner.classList.remove('active');
+      }
+    }
+
+    function createFloatingEffect(holeWrapper, text) {
+      const effect = document.createElement('div');
+      effect.className = 'hit-effect';
+      effect.textContent = text;
+      
+      // Random position slight offset
+      const offsetX = (Math.random() - 0.5) * 30;
+      effect.style.left = `calc(50% + ${offsetX}px)`;
+      effect.style.top = `20%`;
+
+      holeWrapper.appendChild(effect);
+
+      setTimeout(() => {
+        effect.remove();
+      }, 700);
+    }
+
+    function createHammerEffect(holeWrapper) {
+      const hammer = document.createElement('div');
+      hammer.className = 'hammer-hit-anim';
+      hammer.style.right = '10px';
+      hammer.style.top = '10px';
+      holeWrapper.appendChild(hammer);
+
+      setTimeout(() => {
+        hammer.remove();
+      }, 250);
+    }
+
+    /* ==========================================
+       GAME FLOW: START & GAME OVER
+       ========================================== */
+    function startGame() {
+      soundManager.init();
+
+      // Reset variables
+      score = 0;
+      timeRemaining = TOTAL_TIME;
+      combo = 0;
+      maxCombo = 0;
+      isPlaying = true;
+
+      // Reset UI
+      scoreDisplay.textContent = '0';
+      timeDisplay.textContent = `${TOTAL_TIME}s`;
+      timerBar.style.width = '100%';
+      timerBar.className = 'timer-bar-fill';
+      comboBanner.classList.remove('active');
+      gameOverModal.classList.remove('active');
+
+      startBtn.disabled = true;
+
+      // Start Countdown Timer
+      clearInterval(timerInterval);
+      clearTimeout(moleTimeout);
+
+      timerInterval = setInterval(() => {
+        timeRemaining--;
+        timeDisplay.textContent = `${timeRemaining}s`;
+
+        // Update timer bar progress
+        const percentage = (timeRemaining / TOTAL_TIME) * 100;
+        timerBar.style.width = `${percentage}%`;
+
+        if (timeRemaining <= 10 && timeRemaining > 5) {
+          timerBar.className = 'timer-bar-fill warning';
+        } else if (timeRemaining <= 5) {
+          timerBar.className = 'timer-bar-fill danger';
+        }
+
+        if (timeRemaining <= 0) {
+          endGame();
+        }
+      }, 1000);
+
+      // Start mole spawning
+      popUpMole();
+    }
+
+    function endGame() {
+      isPlaying = false;
+      clearInterval(timerInterval);
+      clearTimeout(moleTimeout);
+
+      // Hide all moles
+      document.querySelectorAll('.hole-wrapper').forEach(h => h.classList.remove('up'));
+
+      soundManager.playGameOver();
+
+      // Check High Score
+      let isNewRecord = false;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('whack_mole_highscore', highScore);
+        highScoreDisplay.textContent = highScore;
+        isNewRecord = true;
+      }
+
+      // Display Modal Stats
+      finalScoreText.textContent = `${score}점`;
+      maxComboText.textContent = `${maxCombo} COMBO`;
+      modalHighScoreText.textContent = `${highScore}점`;
+      newRecordContainer.style.display = isNewRecord ? 'block' : 'none';
+
+      gameOverModal.classList.add('active');
+      startBtn.disabled = false;
+    }
+
+    /* ==========================================
+       EVENT LISTENERS
+       ========================================== */
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+
+    soundToggleBtn.addEventListener('click', () => {
+      soundManager.enabled = !soundManager.enabled;
+      soundToggleBtn.textContent = soundManager.enabled ? '🔊' : '🔇';
+      if (soundManager.enabled) soundManager.init();
+    });
+
+    // Initialize Arena on DOM Load
+    window.addEventListener('DOMContentLoaded', () => {
+      initArena();
+    });
+  </script>
+</body>
+</html>
